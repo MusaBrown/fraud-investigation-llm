@@ -1,2 +1,90 @@
-﻿fastapi==0.104.1
+﻿from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+from typing import Dict, List, Optional
+import time
+import uuid
+
+app = FastAPI(title='Fraud Investigation LLM Agent', version='1.0.0')
+
+# Simulated knowledge base of fraud cases
+FRAUD_CASES = [
+    {
+        'id': 'case_001',
+        'type': 'card_testing',
+        'description': 'Multiple small transactions followed by large purchase at electronics store',
+        'amount': 1200,
+        'indicators': ['velocity', 'unusual_merchant']
+    },
+    {
+        'id': 'case_002', 
+        'type': 'account_takeover',
+        'description': 'High-value transfer to new recipient immediately after login',
+        'amount': 5000,
+        'indicators': ['new_recipient', 'high_amount']
+    },
+    {
+        'id': 'case_003',
+        'type': 'physical_card_theft',
+        'description': 'Late night transaction in different city from home',
+        'amount': 800,
+        'indicators': ['location_mismatch', 'late_night']
+    }
+]
+
+class Transaction(BaseModel):
+    transaction_id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
+    amount: float = Field(..., gt=0)
+    merchant: str
+    location: str
+    time: str
+    customer_history: str = ''
+    card_age_days: int = 0
+    previous_fraud: bool = False
+
+class InvestigationResponse(BaseModel):
+    transaction_id: str
+    risk_level: str
+    fraud_probability: float
+    summary: str
+    similar_cases: List[Dict]
+    recommended_actions: List[str]
+    investigation_time_ms: float
+
+@app.get('/')
+def root():
+    return {
+        'name': 'Fraud Investigation LLM Agent',
+        'version': '1.0.0',
+        'features': ['ai_investigation', 'rag_knowledge_base', 'case_matching'],
+        'docs': '/docs'
+    }
+
+@app.get('/health')
+def health():
+    return {'status': 'healthy', 'agent': 'ready', 'knowledge_base_cases': len(FRAUD_CASES)}
+
+def find_similar_cases(amount: float, merchant: str) -> List[Dict]:
+    '''Find similar fraud cases from knowledge base'''
+    similar = []
+    for case in FRAUD_CASES:
+        # Simple similarity matching
+        amount_diff = abs(case['amount'] - amount) / max(case['amount'], amount)
+        if amount_diff < 0.5:  # Within 50% of amount
+            similar.append(case)
+    return similar
+
+def analyze_with_ai(transaction: Dict, similar_cases: List[Dict]) -> Dict:
+    '''Simulate AI analysis (in real version, this calls GPT-4)'''
+    amount = transaction['amount']
+    merchant = transaction['merchant']
+    card_age = transaction['card_age_days']
+    \n    # Calculate fraud probability based on factors
+    fraud_prob = 0.1  # Base probability
+    \n    # Amount factor
+    if amount > 1000:
+n        fraud_prob += 0.3
+    elif amount > 500:\n        fraud_prob += 0.15\n    \n    # Card age factor\n    if card_age < 30:\n        fraud_prob += 0.2\n    \n    # Similar cases factor\n    if len(similar_cases) > 0:\n        fraud_prob += 0.2\n    \n    # Cap at 0.95\n    fraud_prob = min(fraud_prob, 0.95)\n    \n    # Determine risk level\n    if fraud_prob > 0.7:\n        risk_level = 'HIGH'\n    elif fraud_prob > 0.4:\n        risk_level = 'MEDIUM'\n    else:\n        risk_level = 'LOW'\n    \n    # Generate summary\n    if risk_level == 'HIGH':\n        summary = f'Transaction shows HIGH fraud risk. Amount () is unusual. {len(similar_cases)} similar fraud cases found.'\n        actions = ['Block transaction immediately', 'Contact customer', 'Review account activity']\n    elif risk_level ==
+@"
+fastapi==0.104.1
 uvicorn==0.24.0
+pydantic==2.5.0
